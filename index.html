@@ -1,0 +1,971 @@
+<html>
+<head>
+  <title>Aventuras sem fim - RPG - Expansion</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+    body,button,input,select,textarea{font-family:'MedievalSharp',cursive;color:#d4af37;}
+    body{background:#000;margin:0;padding:20px;display:flex;justify-content:center;align-items:center;min-height:100vh;}
+    .container{background:rgba(20,20,20,0.8);border-radius:10px;box-shadow:0 0 20px rgba(212,175,55,0.5);padding:20px;width:90%;border:2px solid #d4af37;}
+    .game-area{display:flex;gap:20px;}
+    .chat-area{flex:2;}
+    .player-info,.modal-content,.chat-box,.modal input,.modal select,#user-input{background:rgba(30,30,30,0.7);border:1px solid #d4af37;color:#d4af37;}
+    .player-info,.modal-content{border-radius:10px;}
+    .player-info{flex:1;padding:1vw;}
+    .chat-box{height:400px;overflow-y:auto;padding:10px;margin-bottom:20px;scrollbar-width:thin;scrollbar-color:#d4af37 #2c2c2c;}
+    .chat-box::-webkit-scrollbar{width:8px;background:#2c2c2c;}
+    .chat-box::-webkit-scrollbar-thumb{background:#d4af37;border-radius:20px;border:2px solid #2c2c2c;}
+    .input-area{display:flex;flex-direction:column;gap:10px;}
+    #user-input{flex-grow:1;padding:10px;font-size:16px;}
+    #send-button,.action-button,.modal button{padding:10px 20px;font-size:16px;background:#d4af37;color:#2c2c2c;border:none;cursor:pointer;transition:all 0.3s ease;}
+    #send-button:hover,.action-button:hover,.modal button:hover{background:#c19b2e;}
+    .message{margin-bottom:10px;padding:10px;border-radius:5px;font-size:18px;}
+    .user{background:rgba(212,175,55,0.2);text-align:right;border-right:3px solid #d4af37;}
+    .gm{background:rgba(70,130,180,0.2);border-left:3px solid #4682b4;}
+    .system{background:rgba(178,34,34,0.2);font-style:italic;text-align:center;border:1px dashed #b22222;}
+    h1,h2,h3{text-align:center;color:#d4af37;text-shadow:2px 2px 4px #000;}
+    h1{font-size:2.5em;}
+    h2{font-size:1.8em;}
+    h3{font-size:1.5em;}
+    .stat{margin-bottom:10px;display:block !important;}
+    .stat-name{font-weight:bold;color:#4682b4;}
+    #inventory{list-style-type:none;padding:0;}
+    #inventory li{margin-bottom:5px;}
+    .modal{display:none;position:fixed;z-index:1;left:0;top:0;width:100%;height:100%;overflow:auto;background:rgba(0,0,0,0.8);}
+    .modal-content{margin:1% auto;width:80%;max-width:600px;padding:3% calc(22% + -59px);}
+    .close{color:#aaa;float:right;font-size:28px;font-weight:bold;cursor:pointer;}
+    .close:hover,.close:focus{color:#d4af37;}
+    .modal input,.modal select,.modal textarea{width:100%;padding:10px;margin:10px 0;}
+    #character-portrait{width:200px;height:auto;background:#1c1c1c;margin:10px auto;border:1px solid #d4af37;display:flex;justify-content:center;align-items:center;font-style:italic;}
+    #generate-portrait,#upload-portrait,#portrait-generator{display:block;margin:10px auto;color:black;}
+    #gold,#character-description{text-align:center;font-size:1.2em;margin:10px 0 20px;}
+    #gold{color:#ffd700;}
+    #character-description{color:#4682b4;}
+    .action-buttons{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+    #stats{margin-top:20px;}
+    @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+    .loading{display:inline-block;width:30px;height:30px;border:3px solid #d4af37;border-radius:50%;border-top-color:transparent;animation:spin 1s linear infinite;}
+    #character-name{width:96%;}
+    #clear-chat,#update-stats{margin-top:10px;padding:3px;width:100%;cursor:pointer;}
+    #clear-chat{background:#800000;color:#fff;}
+    #update-stats{background:orange;color:black;padding:10px;}
+    .switch{position:relative;display:inline-block;width:60px;height:34px;}
+    .switch input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;}
+    .slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;bottom:4px;background-color:white;transition:.4s;}
+    input:checked + .slider{background-color:#800000;}
+    input:checked + .slider:before{transform:translateX(26px);}
+    .slider.round{border-radius:34px;}
+    .slider.round:before{border-radius:50%;}
+    #create-character,#load-character{display:inline-block;width:calc(50% - 5px);}
+    #game-version{text-align:right;color:#d4af37;font-size:0.8em;margin-top:10px;}
+    #footer {
+      text-align: center;
+      color: #d4af37;
+      font-size: 1em;
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(212,175,55,0.3);
+    }
+    ::selection{background:black;color:#d4af37;}
+    .tooltip{position:relative;display:inline-block;cursor:help;}
+    .tooltip .tooltiptext{visibility:hidden;width:200px;background-color:#555;color:#fff;text-align:center;border-radius:6px;padding:5px;position:absolute;z-index:1;bottom:125%;left:50%;margin-left:-100px;opacity:0;transition:opacity 0.3s;}
+    .tooltip:hover .tooltiptext{visibility:visible;opacity:1;}
+    .select-container{display:flex;align-items:center;}
+    .select-container select{flex-grow:1;}
+    .select-container .tooltip{margin-left:10px;}
+    #tooltip-race,#tooltip-class{width:300px;font-size:small;text-align:left;white-space:nowrap;}
+    #tooltip-race div,#tooltip-class div{margin-bottom:2px;}
+    #gm-guidelines-button{position:fixed;top:10px;left:10px;z-index:1000;}
+    #gm-guidelines-modal textarea{width:100%;height:200px;margin-bottom:10px;}
+    #health-bar-container{width:100%;background-color:#ddd;margin-bottom:10px;border-radius:5px;overflow:hidden;}
+    #health-bar{width:100%;height:20px;background-color:#4CAF50;text-align:center;line-height:20px;color:white;transition:width 0.5s ease-in-out;}
+    #floating {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <img id="floating" src="artgame.jpg" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 9999;">
+  <div class="container" style="max-width: none;">
+    <h1>Aventuras sem fim</h1>
+    <div class="game-area">
+      <div class="chat-area">
+        <div id="chat-box" class="chat-box"></div>
+        <div class="input-area">
+          <input type="text" id="user-input" placeholder="Fale sua ação, bravo aventureiro...">
+          <button id="send-button">Enviar</button>
+          <div class="action-buttons">
+            <button class="action-button" id="action-1"></button>
+            <button class="action-button" id="action-2"></button>
+            <button class="action-button" id="action-3"></button>
+            <button class="action-button" id="action-4"></button>
+          </div>
+          <button id="clear-chat">Limpar Chat - Use quando o Mestre não responder, depois escreva novamente</button>
+          <button id="update-stats">Atualizar ficha de personagem e corrigir todos os atributos</button>
+        </div>
+      </div>
+      <div class="player-info">
+        <h2>Ficha de Personagem</h2>
+        <div id="character-description"></div>
+        <div id="character-portrait">Nenhum retrato gerado</div>
+        <button id="generate-portrait">Gerar Retrato</button>
+        <button id="upload-portrait">Carregar Retrato</button>
+        <button id="portrait-generator" onclick="window.open('https://websim.ai/@groximus/dungeons-and-dragons-portrait-creator-design-your-', '_blank')">Gerador de Retrato</button>
+        <div id="health-bar-container">
+          <div id="health-bar">100%</div>
+        </div>
+        <div id="stats"></div>
+        <h3>Inventário</h3>
+        <ul id="inventory"></ul>
+        <div id="gold"></div>
+      </div>
+    </div>
+    <div id="game-version">v 1.0</div>
+    <div id="footer">Criado Por Fabio Maran</div>
+  </div>
+  <div id="character-creation-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">×</span>
+      <h2>Crie Seu Personagem</h2>
+      <input type="text" id="character-name" placeholder="Digite o nome do personagem">
+      <select id="character-gender">
+        <option value="">Selecione o Gênero</option>
+        <option value="male">Masculino</option>
+        <option value="female">Feminino</option>
+        <option value="non-binary">Não-Binário</option>
+      </select>
+      <div class="select-container">
+        <select id="character-race">
+          <option value="">Selecione a Raça</option>
+          <option value="human">Humano</option>
+          <option value="elf">Elfo</option>
+          <option value="dwarf">Anão</option>
+          <option value="orc">Orc</option>
+          <option value="lizardman">Homem-Lagarto</option>
+          <option value="vampire">Vampiro</option>
+          <option value="golem">Golem</option>
+          <option value="gnome">Gnomo</option>
+          <option value="halfling">Halfling</option>
+        </select>
+        <span class="tooltip">?<span class="tooltiptext" id="tooltip-race">
+          <div id="human">Humano: +2 CAR, +1 SAB</div>
+          <div id="elf">Elfo: +2 DES, +2 INT, -2 FOR, -1 CON</div>
+          <div id="dwarf">Anão: +3 CON, -2 DES, -1 CAR</div>
+          <div id="orc">Orc: +2 FOR, +1 CON, -2 INT, -2 CAR</div>
+          <div id="lizardman">Homem-Lagarto: +1 CON, +1 DES, +1 SAB, -2 INT, -1 CAR</div>
+          <div id="vampire">Vampiro: +2 CAR, +1 DES, -4 SAB, -1 CON</div>
+          <div id="golem">Golem: +2 FOR, +2 CON, -2 INT, -4 CAR</div>
+          <div id="gnome">Gnomo: +4 INT, +2 DES, -2 CON, -2 CAR, -3 FOR</div>
+          <div id="halfling">Halfling: +2 DES, +2 CAR, -1 CON, -1 INT, -2 FOR</div>
+        </span></span>
+      </div>
+      <div class="select-container">
+        <select id="character-class">
+          <option value="">Selecione a Classe</option>
+          <option value="barbarian">Bárbaro</option>
+          <option value="bard">Bardo</option>
+          <option value="cleric">Clérigo</option>
+          <option value="druid">Druida</option>
+          <option value="fighter">Guerreiro</option>
+          <option value="monk">Monge</option>
+          <option value="paladin">Paladino</option>
+          <option value="ranger">Patrulheiro</option>
+          <option value="rogue">Ladino</option>
+          <option value="sorcerer">Feiticeiro</option>
+          <option value="warlock">Bruxo</option>
+          <option value="wizard">Mago</option>
+        </select>
+        <span class="tooltip">?<span class="tooltiptext" id="tooltip-class">
+          <div>Bárbaro: Alta FOR e CON</div>
+          <div>Bardo: Versátil, alta CAR</div>
+          <div>Clérigo: Alta SAB, suporte e cura</div>
+          <div>Druida: Magia da natureza, metamorfose</div>
+          <div>Guerreiro: Guerreiro versátil</div>
+          <div>Monge: Combate desarmado, alta DES</div>
+          <div>Paladino: Guerreiro sagrado, alta FOR e CAR</div>
+          <div>Patrulheiro: Especialista em natureza, alta DES e SAB</div>
+          <div>Ladino: Furtividade e perícias</div>
+          <div>Feiticeiro: Magia inata, alta CAR</div>
+          <div>Bruxo: Magia de pacto, alta CAR</div>
+          <div>Mago: Magia arcana, alta INT</div>
+        </span></span>
+      </div>
+      <select id="campaign-select">
+        <option value="random">Campanha aleatória</option>
+        <option value="mysterious-plague">Praga Misteriosa</option>
+        <option value="missing-nobles">Nobres Desaparecidos</option>
+        <option value="haunted-village">Vila Assombrada</option>
+        <option value="bandit-uprising">Levante de Bandidos</option>
+        <option value="ancient-ruins">Ruínas Antigas</option>
+        <option value="political-intrigue">Intriga Política</option>
+        <option value="dragon-threat">Ameaça de Dragão</option>
+        <option value="cursed-artifact">Artefato Amaldiçoado</option>
+        <option value="lost-expedition">Expedição Perdida</option>
+        <option value="merchant-caravan">Caravana de Mercadores</option>
+        <option value="rebellion">Rebelião</option>
+        <option value="prophecy">Profecia</option>
+        <option value="seaside-terror">Terror Marítimo</option>
+        <option value="festival-sabotage">Sabotagem no Festival</option>
+        <option value="hidden-cult">Culto Oculto</option>
+        <option value="elemental-chaos">Caos Elemental</option>
+        <option value="magical-academy">Academia de Magia</option>
+        <option value="royal-escort">Escolta Real</option>
+        <option value="giant-invasion">Invasão de Gigantes</option>
+      </select>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+        <span>Modo Difícil <span class="tooltip">?<span class="tooltiptext" id="tooltip-hardmode">No Modo Difícil, você começa com atributos mais baixos e enfrenta desafios mais difíceis. Apenas para aventureiros experientes!</span></span></span>
+        <label class="switch">
+          <input type="checkbox" id="hard-mode">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:12px;">
+        <span>Texto para Voz</span>
+        <label class="switch">
+          <input type="checkbox" id="tts-mode" checked="">
+          <span class="slider round"></span>
+        </label>
+      </div>
+      <button id="create-character">Criar Personagem</button>
+      <button id="load-character">Carregar Personagem</button>
+    </div>
+  </div>
+  <div id="gm-guidelines-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close">×</span>
+      <h2>Diretrizes do Mestre</h2>
+      <textarea id="gm-guidelines-text" style="background-color: rgba(30,30,30,0.7);"></textarea>
+      <button id="apply-guidelines">Aplicar Diretrizes</button>
+    </div>
+  </div>
+  <div id="like-modal" class="modal">
+    <div class="modal-content">
+      <h2>Se você está gostando de Aventuras sem fim, clique no ♡ para dar um Like</h2>
+      <button id="close-like-modal">Fechar</button>
+    </div>
+  </div>
+  <script>
+    const e = {
+      chatBox: document.getElementById('chat-box'),
+      userInput: document.getElementById('user-input'),
+      sendButton: document.getElementById('send-button'),
+      stats: document.getElementById('stats'),
+      inventory: document.getElementById('inventory'),
+      modal: document.getElementById('character-creation-modal'),
+      closeButton: document.getElementsByClassName('close')[0],
+      createCharacterButton: document.getElementById('create-character'),
+      loadCharacterButton: document.getElementById('load-character'),
+      generatePortraitButton: document.getElementById('generate-portrait'),
+      uploadPortraitButton: document.getElementById('upload-portrait'),
+      characterPortrait: document.getElementById('character-portrait'),
+      gold: document.getElementById('gold'),
+      characterDescription: document.getElementById('character-description'),
+      actionButtons: Array.from(document.getElementsByClassName('action-button')),
+      clearChatButton: document.getElementById('clear-chat'),
+      hardModeToggle: document.getElementById('hard-mode'),
+      ttsModeToggle: document.getElementById('tts-mode'),
+      campaignSelect: document.getElementById('campaign-select'),
+      gmGuidelinesText: document.getElementById('gm-guidelines-text'),
+      applyGuidelinesButton: document.getElementById('apply-guidelines'),
+      updateStatsButton: document.getElementById('update-stats'),
+      healthBar: document.getElementById('health-bar')
+    };
+    let l = [300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
+    let c = ["Mysterious Plague", "Missing Nobles", "Haunted Village", "Bandit Uprising", "Ancient Ruins", "Political Intrigue", "Dragon Threat", "Cursed Artifact", "Lost Expedition", "Merchant Caravan", "Rebellion", "Prophecy", "Seaside Terror", "Festival Sabotage", "Hidden Cult", "Elemental Chaos", "Magical Academy", "Royal Escort", "Giant Invasion"];
+    let p = {
+      name: "",
+      gender: "",
+      race: "",
+      class: "",
+      level: 1,
+      experience: 0,
+      energy: 100,
+      health: 100,
+      maxHealth: 100,
+      stats: {
+        Strength: 10,
+        Dexterity: 10,
+        Constitution: 10,
+        Intelligence: 10,
+        Wisdom: 10,
+        Charisma: 10
+      },
+      inventory: [],
+      gold: 0,
+      hardMode: false,
+      ttsMode: true,
+      campaign: ""
+    };
+    let gmGuidelines = "";
+    let conversationHistory = [];
+    
+    window.onload = () => {
+      e.modal.style.display = "block";
+      fetchAndApplyGuidelines();
+    }
+    e.closeButton.onclick = () => e.modal.style.display = "none";
+    window.onclick = (t) => {
+      if (t.target == e.modal) e.modal.style.display = "none";
+      if (t.target == e.gmGuidelinesModal) e.gmGuidelinesModal.style.display = "none"
+    };
+    e.generatePortraitButton.onclick = async function () {
+      if (p.race && p.class && p.gender) {
+        e.characterPortrait.innerHTML = "Generating portrait...";
+        try {
+          const t = await websim.imageGen({
+            prompt: `${p.race} ${p.class} character portrait, ${p.gender}, close up near face`,
+            width: 512,
+            height: 512
+          });
+          e.characterPortrait.innerHTML = t.url ? `<img src="${t.url}" alt="Character Portrait" style="max-width: 100%; max-height: 100%;">` : "Failed to generate portrait"
+        } catch (t) {
+          console.error('Error:', t);
+          e.characterPortrait.innerHTML = "Error generating portrait"
+        }
+      } else {
+        alert("Please create your character before generating a portrait.")
+      }
+    };
+    e.uploadPortraitButton.onclick = function () {
+      const t = document.createElement('input');
+      t.type = 'file';
+      t.accept = 'image/*';
+      t.onchange = function (a) {
+        const n = a.target.files[0];
+        if (n) {
+          const r = new FileReader();
+          r.onload = function (a) {
+            e.characterPortrait.innerHTML = `<img src="${a.target.result}" alt="Uploaded Character Portrait" style="max-width: 100%; max-height: 100%;">`;
+            p.portraitURL = a.target.result;
+            saveCharacter()
+          };
+          r.readAsDataURL(n)
+        }
+      };
+      t.click()
+    };
+    function g(t, a) {
+      const n = {
+        barbarian: ['Machado Grande', 'Armadura de Couro', 'Poção de Cura'],
+        bard: ['Alaúde', 'Adaga', 'Armadura Leve', 'Poção de Charme'],
+        cleric: ['Maça', 'Escudo', 'Cota de Malha', 'Símbolo Sagrado'],
+        druid: ['Cajado de Madeira', 'Armadura de Couro', 'Bolsa de Ervas'],
+        fighter: ['Espada Longa', 'Escudo', 'Cota de Malha', 'Poção de Cura'],
+        monk: ['Bastão', 'Vestes de Monge', 'Contas de Meditação'],
+        paladin: ['Espada Longa', 'Escudo', 'Armadura de Placas', 'Símbolo Sagrado'],
+        ranger: ['Arco Longo', 'Aljava de Flechas', 'Armadura de Couro', 'Kit de Armadilhas'],
+        rogue: ['Espada Curta', 'Adaga', 'Armadura de Couro', 'Ferramentas de Ladrão'],
+        sorcerer: ['Foco Arcano', 'Adaga', 'Vestes', 'Poção de Mana'],
+        warlock: ['Foco Arcano', 'Armadura de Couro', 'Grimório', 'Amuleto Místico'],
+        wizard: ['Livro de Magias', 'Varinha', 'Vestes', 'Pergaminho de Míssil Mágico']
+      };
+      const r = {
+        human: 'Ferramenta Versátil',
+        elf: 'Capa Élfica',
+        dwarf: 'Picareta',
+        orc: 'Pedra de Amolar Rústica',
+        lizardman: 'Ídolo Antigo',
+        vampire: 'Frasco de Sangue',
+        golem: 'Núcleo Elemental',
+        gnome: 'Feijões Mágicos',
+        halfling: 'Cachimbo de Halfling'
+      };
+      return [...n[t], r[a]]
+    }
+    e.createCharacterButton.onclick = function () {
+      const t = document.getElementById('character-name').value;
+      const a = document.getElementById('character-gender').value;
+      const n = document.getElementById('character-race').value;
+      const r = document.getElementById('character-class').value;
+      const i = e.hardModeToggle.checked;
+      const s = e.ttsModeToggle.checked;
+      const d = e.campaignSelect.value;
+      if (t && a && n && r) {
+        p = {
+          ...p,
+          name: t,
+          gender: a,
+          race: n,
+          class: r,
+          hardMode: i,
+          ttsMode: s,
+          campaign: d,
+          energy: 100,
+          health: 100,
+          maxHealth: 100
+        };
+        const o = i ? 5 : 10;
+        Object.keys(p.stats).forEach(t => p.stats[t] = o);
+        const m = {
+          human: () => {
+            p.stats.Charisma += 2;
+            p.stats.Wisdom += 1
+          },
+          elf: () => {
+            p.stats.Dexterity += 2;
+            p.stats.Intelligence += 2;
+            p.stats.Strength -= 2;
+            p.stats.Constitution -= 1
+          },
+          dwarf: () => {
+            p.stats.Constitution += 3;
+            p.stats.Dexterity -= 2;
+            p.stats.Charisma -= 1
+          },
+          orc: () => {
+            p.stats.Strength += 2;
+            p.stats.Constitution += 1;
+            p.stats.Intelligence -= 2;
+            p.stats.Charisma -= 2
+          },
+          lizardman: () => {
+            p.stats.Constitution += 1;
+            p.stats.Dexterity += 1;
+            p.stats.Wisdom += 1;
+            p.stats.Intelligence -= 2;
+            p.stats.Charisma -= 1
+          },
+          vampire: () => {
+            p.stats.Charisma += 2;
+            p.stats.Dexterity += 1;
+            p.stats.Constitution -= 1;
+            p.stats.Wisdom -= 4
+          },
+          golem: () => {
+            p.stats.Strength += 2;
+            p.stats.Constitution += 2;
+            p.stats.Intelligence -= 2;
+            p.stats.Charisma -= 4
+          },
+          gnome: () => {
+            p.stats.Intelligence += 4;
+            p.stats.Dexterity += 2;
+            p.stats.Constitution -= 2;
+            p.stats.Charisma -= 2;
+            p.stats.Strength -= 3
+          },
+          halfling: () => {
+            p.stats.Dexterity += 2;
+            p.stats.Charisma += 2;
+            p.stats.Constitution -= 1;
+            p.stats.Intelligence -= 1;
+            p.stats.Strength -= 2
+          }
+        };
+        m[n]();
+        p.inventory = g(r, n);
+        p.gold = Math.floor(Math.random() * 50) + 50;
+        u();
+        e.modal.style.display = "none";
+        const y = d === "random" ? c[Math.floor(Math.random() * c.length)] : d.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        h(`Bem-vindo, ${t} o ${a === 'male' ? '' : a === 'female' ? 'a' : ''} ${translateRaceClass(n, a)} ${translateRaceClass(r, a)}! Sua aventura começa no reino de Landia, uma terra de magia e mistério. Ao entrar neste mundo, você se encontra no meio de uma grande comoção. O reino está agitado com notícias sobre ${y}. ${i ? 'O ar parece pesado com perigo, e você sente que sua jornada será cheia de perigos. ' : ''}`)
+      } else {
+        alert("Por favor, preencha todos os campos antes de criar seu personagem.")
+      }
+    };
+    
+    function u() {
+      e.characterDescription.textContent = `${p.name} o ${p.gender === 'female' ? 'a' : ''} ${translateRaceClass(p.race, p.gender)} ${translateRaceClass(p.class, p.gender)}`;
+      const healthPercentage = Math.round((p.health / p.maxHealth) * 100);
+      e.healthBar.style.width = `${healthPercentage}%`;
+      e.healthBar.textContent = `${healthPercentage}%`;
+      e.stats.innerHTML = `
+        <div class="stat"><span class="stat-name">Nível:</span> ${p.level}</div>
+        <div class="stat"><span class="stat-name">Experiência:</span> ${p.experience} / ${l[p.level - 1] || "Máx"}</div>
+        <div class="stat"><span class="stat-name">Energia:</span> ${p.energy}%</div>
+        ${Object.entries(translateStats(p.stats)).map(([t, a]) => `<div class="stat"><span class="stat-name">${t}:</span> ${a}</div>`).join('')}
+      `;
+      e.inventory.innerHTML = p.inventory.map(t => `<li>${t}</li>`).join('');
+      e.gold.textContent = `Ouro: ${p.gold}`;
+      if (p.portraitURL) {
+        e.characterPortrait.innerHTML = `<img src="${p.portraitURL}" alt="Retrato do Personagem" style="max-width: 100%; max-height: 100%;">`
+      }
+    }
+    
+    function translateStats(stats) {
+      const translations = {
+        'Strength': 'Força',
+        'Dexterity': 'Destreza',
+        'Constitution': 'Constituição',
+        'Intelligence': 'Inteligência',
+        'Wisdom': 'Sabedoria',
+        'Charisma': 'Carisma'
+      };
+      
+      const translatedStats = {};
+      for (const [key, value] of Object.entries(stats)) {
+        translatedStats[translations[key] || key] = value;
+      }
+      return translatedStats;
+    }
+    
+    function translateRaceClass(value, gender) {
+      const translations = {
+        'human': gender === 'female' ? 'Humana' : 'Humano',
+        'elf': gender === 'female' ? 'Elfa' : 'Elfo',
+        'dwarf': gender === 'female' ? 'Anã' : 'Anão',
+        'orc': 'Orc',
+        'lizardman': gender === 'female' ? 'Mulher-Lagarto' : 'Homem-Lagarto',
+        'vampire': gender === 'female' ? 'Vampira' : 'Vampiro',
+        'golem': 'Golem',
+        'gnome': gender === 'female' ? 'Gnoma' : 'Gnomo',
+        'halfling': 'Halfling',
+        'barbarian': gender === 'female' ? 'Bárbara' : 'Bárbaro',
+        'bard': gender === 'female' ? 'Barda' : 'Bardo',
+        'cleric': gender === 'female' ? 'Clériga' : 'Clérigo',
+        'druid': gender === 'female' ? 'Druida' : 'Druida',
+        'fighter': gender === 'female' ? 'Guerreira' : 'Guerreiro',
+        'monk': gender === 'female' ? 'Monja' : 'Monge',
+        'paladin': gender === 'female' ? 'Paladina' : 'Paladino',
+        'ranger': gender === 'female' ? 'Patrulheira' : 'Patrulheiro',
+        'rogue': gender === 'female' ? 'Ladina' : 'Ladino',
+        'sorcerer': gender === 'female' ? 'Feiticeira' : 'Feiticeiro',
+        'warlock': gender === 'female' ? 'Bruxa' : 'Bruxo',
+        'wizard': gender === 'female' ? 'Maga' : 'Mago'
+      };
+      
+      return translations[value] || value;
+    }
+    
+    function m(t, a) {
+      const n = document.createElement('div');
+      n.classList.add('message', a);
+      n.textContent = t;
+      e.chatBox.appendChild(n);
+      e.chatBox.scrollTop = e.chatBox.scrollHeight;
+      if (a === 'gm' && p.ttsMode) {
+        y(t)
+      }
+      
+      // Add message to conversation history
+      if (a === 'user' || a === 'gm') {
+        conversationHistory.push({
+          role: a === 'user' ? 'user' : 'assistant',
+          content: t
+        });
+        // Keep conversation history to a reasonable size
+        if (conversationHistory.length > 10) {
+          conversationHistory = conversationHistory.slice(-10);
+        }
+      }
+    }
+    
+    function y(t) {
+      const a = new SpeechSynthesisUtterance(t);
+      a.rate = 1.2;
+      a.pitch = 0.8;
+      a.volume = 0.8;
+      window.speechSynthesis.speak(a)
+    }
+    
+    async function f(t) {
+      if (t) {
+        m(t, 'user');
+        e.userInput.value = '';
+        v();
+        const a = document.createElement('div');
+        a.classList.add('message', 'gm');
+        a.innerHTML = '<div class="loading"></div>';
+        e.chatBox.appendChild(a);
+        e.chatBox.scrollTop = e.chatBox.scrollHeight;
+        try {
+          const completion = await websim.chat.completions.create({
+            messages: [
+              {
+                role: "system",
+                content: `Você é um mestre de jogos de RPG estilo Dungeons & Dragons chamado Guardião de Landia.
+                
+                INFORMAÇÕES DO PERSONAGEM:
+                ${JSON.stringify(p, null, 2)}
+                
+                DIRETRIZES DO MESTRE:
+                ${gmGuidelines}
+                
+                INSTRUÇÕES:
+                1. Analise a entrada do jogador, histórico de conversação, estatísticas do personagem e diretrizes relevantes do Mestre
+                2. Crie uma resposta imersiva, em segunda pessoa, fiel às convenções de RPG de fantasia
+                3. Considere a raça, classe, estatísticas e inventário do jogador ao determinar o sucesso/fracasso das ações
+                4. Inclua 2-4 possíveis ações que o jogador pode tomar a seguir em sua narrativa
+                5. Formate as ações sugeridas como [Ação: descrição] no final da sua resposta
+                6. Adicione detalhes de atmosfera, reações de NPCs e consequências baseadas nas escolhas do jogador
+                7. Acompanhe mudanças de energia/saúde com base nas ações (combate reduz saúde, viagem reduz energia)
+                8. Para combate, calcule resultados com base nas estatísticas do personagem e forneça recompensas apropriadas
+                9. Certifique-se de que sua resposta faça a história avançar
+                
+                MUDANÇAS DE ESTADO DO JOGADOR:
+                Quando as estatísticas do jogador mudarem, sempre inclua as alterações em um formato especial no final da sua resposta:
+                [HEALTH:-10] - Quando o jogador sofre dano ou recupera saúde
+                [XP:+100] - Quando o jogador ganha experiência
+                [ENERGY:-5] - Quando o jogador usa energia para viagem ou ações
+                [INVENTORY:+Poção de Cura] - Quando o jogador encontra ou recebe um item
+                [INVENTORY:-Corda] - Quando o jogador usa ou perde um item
+                [GOLD:+50] - Quando o jogador ganha ouro
+                [GOLD:-20] - Quando o jogador gasta ouro
+                
+                Mantenha respostas de alta qualidade e envolventes, seguindo estritamente as diretrizes do Mestre.
+                
+                IMPORTANTE: RESPONDA SEMPRE EM PORTUGUÊS DO BRASIL.`
+              },
+              ...conversationHistory,
+              {
+                role: "user",
+                content: t
+              }
+            ]
+          });
+          const r = completion.content;
+          e.chatBox.removeChild(a);
+          m(r, 'gm');
+          
+          // Process state changes from GM response
+          processStateChanges(r);
+          
+          d(extractActions(r))
+        } catch (n) {
+          console.error('Error:', n);
+          e.chatBox.removeChild(a);
+          m('Uma força das trevas interferiu. Por favor, tente novamente.', 'system')
+        }
+      }
+    }
+    
+    async function h(t) {
+      v();
+      const a = document.createElement('div');
+      a.classList.add('message', 'gm');
+      a.innerHTML = '<div class="loading"></div>';
+      e.chatBox.appendChild(a);
+      e.chatBox.scrollTop = e.chatBox.scrollHeight;
+      try {
+        // Add to conversation history for context
+        conversationHistory.push({
+          role: "user",
+          content: t
+        });
+        
+        if (conversationHistory.length > 10) {
+          conversationHistory = conversationHistory.slice(-10);
+        }
+        
+        const completion = await websim.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: `Você é um mestre de jogos de RPG estilo Dungeons & Dragons chamado Guardião de Landia.
+              
+              INFORMAÇÕES DO PERSONAGEM:
+              ${JSON.stringify(p, null, 2)}
+              
+              DIRETRIZES DO MESTRE:
+              ${gmGuidelines}
+              
+              INSTRUÇÕES:
+              1. Analise a entrada do jogador, histórico de conversação, estatísticas do personagem e diretrizes relevantes do Mestre
+              2. Crie uma resposta imersiva, em segunda pessoa, fiel às convenções de RPG de fantasia
+              3. Considere a raça, classe, estatísticas e inventário do jogador ao determinar o sucesso/fracasso das ações
+              4. Inclua 2-4 possíveis ações que o jogador pode tomar a seguir em sua narrativa
+              5. Formate as ações sugeridas como [Ação: descrição] no final da sua resposta
+              6. Adicione detalhes de atmosfera, reações de NPCs e consequências baseadas nas escolhas do jogador
+              7. Acompanhe mudanças de energia/saúde com base nas ações (combate reduz saúde, viagem reduz energia)
+              8. Para combate, calcule resultados com base nas estatísticas do personagem e forneça recompensas apropriadas
+              9. Certifique-se de que sua resposta faça a história avançar
+              
+              MUDANÇAS DE ESTADO DO JOGADOR:
+              Quando as estatísticas do jogador mudarem, sempre inclua as alterações em um formato especial no final da sua resposta:
+              [HEALTH:-10] - Quando o jogador sofre dano ou recupera saúde
+              [XP:+100] - Quando o jogador ganha experiência
+              [ENERGY:-5] - Quando o jogador usa energia para viagem ou ações
+              [INVENTORY:+Poção de Cura] - Quando o jogador encontra ou recebe um item
+              [INVENTORY:-Corda] - Quando o jogador usa ou perde um item
+              [GOLD:+50] - Quando o jogador ganha ouro
+              [GOLD:-20] - Quando o jogador gasta ouro
+              
+              Mantenha respostas de alta qualidade e envolventes, seguindo estritamente as diretrizes do Mestre.
+              
+              IMPORTANTE: RESPONDA SEMPRE EM PORTUGUÊS DO BRASIL.`
+            },
+            ...conversationHistory
+          ]
+        });
+        
+        const r = completion.content;
+        e.chatBox.removeChild(a);
+        m(r, 'gm');
+        
+        // Process state changes from GM response
+        processStateChanges(r);
+        
+        d(extractActions(r))
+      } catch (n) {
+        console.error('Error:', n);
+        e.chatBox.removeChild(a);
+        m('Uma força das trevas interferiu. Por favor, tente novamente.', 'system')
+      }
+    }
+    
+    function v() {
+      e.actionButtons.forEach(t => t.style.display = 'none')
+    }
+    function d(t) {
+      e.actionButtons.forEach((a, n) => {
+        if (t[n]) {
+          a.textContent = t[n];
+          a.style.display = 'block';
+          a.onclick = () => f(t[n])
+        } else {
+          a.style.display = 'none'
+        }
+      })
+    }
+    
+    function processStateChanges(response) {
+      // Process health changes
+      const healthRegex = /\[HEALTH:([+-]\d+)\]/g;
+      let healthMatch;
+      while ((healthMatch = healthRegex.exec(response)) !== null) {
+        const healthChange = parseInt(healthMatch[1]);
+        updateHealth(-healthChange); // Negative because updateHealth expects damage as positive
+      }
+      
+      // Process XP changes
+      const xpRegex = /\[XP:([+-]\d+)\]/g;
+      let xpMatch;
+      while ((xpMatch = xpRegex.exec(response)) !== null) {
+        const xpChange = parseInt(xpMatch[1]);
+        if (xpChange > 0) {
+          o(xpChange);
+        }
+      }
+      
+      // Process energy changes
+      const energyRegex = /\[ENERGY:([+-]\d+)\]/g;
+      let energyMatch;
+      while ((energyMatch = energyRegex.exec(response)) !== null) {
+        const energyChange = parseInt(energyMatch[1]);
+        p.energy = Math.max(0, Math.min(100, p.energy + energyChange));
+        u();
+      }
+      
+      // Process inventory additions
+      const inventoryAddRegex = /\[INVENTORY:\+(.+?)\]/g;
+      let inventoryAddMatch;
+      while ((inventoryAddMatch = inventoryAddRegex.exec(response)) !== null) {
+        const item = inventoryAddMatch[1].trim();
+        p.inventory.push(item);
+        u();
+      }
+      
+      // Process inventory removals
+      const inventoryRemoveRegex = /\[INVENTORY:-(.+?)\]/g;
+      let inventoryRemoveMatch;
+      while ((inventoryRemoveMatch = inventoryRemoveRegex.exec(response)) !== null) {
+        const item = inventoryRemoveMatch[1].trim();
+        const itemIndex = p.inventory.findIndex(i => i.toLowerCase() === item.toLowerCase());
+        if (itemIndex !== -1) {
+          p.inventory.splice(itemIndex, 1);
+          u();
+        }
+      }
+      
+      // Process gold changes
+      const goldRegex = /\[GOLD:([+-]\d+)\]/g;
+      let goldMatch;
+      while ((goldMatch = goldRegex.exec(response)) !== null) {
+        const goldChange = parseInt(goldMatch[1]);
+        p.gold += goldChange;
+        u();
+      }
+      
+      // Save character after any changes
+      saveCharacter();
+    }
+    
+    function extractActions(response) {
+      const actionRegex = /\[Action: (.*?)\]/g;
+      const actions = [];
+      let match;
+      while ((match = actionRegex.exec(response)) !== null) {
+        actions.push(match[1]);
+      }
+      return actions;
+    }
+    
+    function o(t) {
+      p.experience += t;
+      while (p.level < 20 && p.experience >= l[p.level - 1]) {
+        p.level++;
+        for (let a = 0; a < 3; a++) {
+          const n = Object.keys(p.stats);
+          const r = n[Math.floor(Math.random() * n.length)];
+          p.stats[r]++
+        }
+        m(`Parabéns! Você alcançou o nível ${p.level}!`, 'system')
+      }
+      u()
+    }
+    
+    function updateHealth(damage) {
+      p.health = Math.max(0, Math.min(p.maxHealth, p.health - damage));
+      u();
+      if (p.health <= 0) {
+        gameOver()
+      }
+    }
+    
+    function gameOver() {
+      m("Sua saúde chegou a 0. Fim de Jogo!", 'system');
+      setTimeout(() => {
+        if (confirm("Gostaria de iniciar um novo jogo?")) {
+          e.modal.style.display = "block"
+        }
+      }, 1000)
+    }
+    
+    e.sendButton.addEventListener('click', () => f(e.userInput.value.trim()));
+    e.userInput.addEventListener('keypress', (t) => {
+      if (t.key === 'Enter') f(e.userInput.value.trim())
+    });
+    e.clearChatButton.addEventListener('click', () => {
+      const t = e.chatBox.querySelectorAll('.message.gm, .message.user, .message.system');
+      t.forEach(t => t.remove())
+    });
+    e.loadCharacterButton.onclick = function () {
+      const t = document.cookie.split('; ').find(t => t.startsWith('playerData='));
+      if (t) {
+        p = JSON.parse(decodeURIComponent(t.split('=')[1]));
+        if (!p.hasOwnProperty('energy')) {
+          p.energy = 100
+        }
+        if (!p.hasOwnProperty('health')) {
+          p.health = 100;
+          p.maxHealth = 100
+        }
+        u();
+        e.modal.style.display = "none";
+        m('Personagem carregado com sucesso!', 'system')
+      } else {
+        alert('Nenhum personagem salvo encontrado.')
+      }
+    };
+    function saveCharacter() {
+      document.cookie = `playerData=${encodeURIComponent(JSON.stringify(p))}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`
+    }
+    setInterval(saveCharacter, 60000);
+    u();
+    async function fetchAndApplyGuidelines() {
+      try {
+        const r = await fetch('https://docs.google.com/document/d/e/2PACX-1vTJnozyKD9VGJMXCY_BWloKxipPkcxMTb7lPlITmJwHpLZZwGXd8NPRm0N6J1iUTBAmbrzxAVWP0S4v/pub');
+        gmGuidelines = (new DOMParser().parseFromString(await r.text(), 'text/html')).querySelector('.doc-content').innerText;
+        document.getElementById('gm-guidelines-text').value = gmGuidelines;
+        
+        // Process the guidelines automatically
+        processGuidelines();
+      } catch (error) {
+        console.error('Error fetching GM guidelines:', error);
+      }
+    }
+    
+    async function processGuidelines() {
+      try {
+        const completion = await websim.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: `Você é um sistema de análise de IA. Analise as diretrizes do Mestre fornecidas para um jogo de RPG de fantasia e extraia as regras principais que devem ser implementadas. Concentre-se na mecânica de jogo, estilo narrativo, nível de dificuldade e quaisquer requisitos específicos.
+              
+              Formate sua resposta como JSON neste formato:
+              {
+                "rules": [
+                  "Regra 1",
+                  "Regra 2",
+                  "etc."
+                ]
+              }`
+            },
+            {
+              role: "user",
+              content: `Analise estas Diretrizes do Mestre e extraia as regras principais a serem implementadas:
+              
+              ${gmGuidelines}`
+            }
+          ],
+          json: true
+        });
+        
+        const data = JSON.parse(completion.content);
+        console.log("GM guidelines processed and applied successfully");
+      } catch (error) {
+        console.error('Error processing GM guidelines:', error);
+      }
+    }
+    document.querySelectorAll('.modal .close').forEach(t => {
+      t.onclick = function () {
+        t.closest('.modal').style.display = 'none'
+      }
+    });
+    e.updateStatsButton.addEventListener('click', () => f("update stats"));
+    document.getElementById('apply-guidelines').onclick = async function () {
+      gmGuidelines = e.gmGuidelinesText.value;
+      e.gmGuidelinesModal.style.display = "none";
+      m("Diretrizes do Mestre atualizadas com sucesso!", 'system');
+      try {
+        const completion = await websim.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: `Você é um sistema de análise de IA. Analise as diretrizes do Mestre fornecidas para um jogo de RPG de fantasia e extraia as regras principais que devem ser implementadas. Concentre-se na mecânica de jogo, estilo narrativo, nível de dificuldade e quaisquer requisitos específicos.
+              
+              Formate sua resposta como JSON neste formato:
+              {
+                "rules": [
+                  "Regra 1",
+                  "Regra 2",
+                  "etc."
+                ]
+              }`
+            },
+            {
+              role: "user",
+              content: `Analise estas Diretrizes do Mestre e extraia as regras principais a serem implementadas:
+              
+              ${gmGuidelines}`
+            }
+          ],
+          json: true
+        });
+        
+        const data = JSON.parse(completion.content);
+        const newRules = data.rules;
+        let rulesMessage = "As regras do jogo foram atualizadas com base nas novas diretrizes do Mestre:\n";
+        for (const rule of newRules) {
+          rulesMessage += `- ${rule}\n`;
+        }
+        m(rulesMessage, 'system');
+      } catch (error) {
+        console.error('Erro ao atualizar regras do jogo:', error);
+        m('Erro ao atualizar regras do jogo. Por favor, tente novamente.', 'system');
+      }
+    };
+    const floatingImg = document.getElementById('floating');
+    floatingImg.addEventListener('click', removeFloatingImage);
+    function removeFloatingImage() {
+      floatingImg.remove();
+    }
+    setTimeout(removeFloatingImage, 30000);
+    setTimeout(() => {
+      const likeModal = document.getElementById('like-modal');
+      likeModal.style.display = "block";
+      const closeLikeModal = document.getElementById('close-like-modal');
+      closeLikeModal.onclick = function () {
+        likeModal.style.display = "none";
+      }
+    }, 300000);
+  </script>
+</body>
+</html>
